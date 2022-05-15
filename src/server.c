@@ -19,11 +19,11 @@ int main(int argc, char** argv) {
     // default http status (success)
     char* http_status = malloc(sizeof(char) * 100);
     assert(http_status);
-    strcpy(http_status, "HTTP/1.0 200 OK\n");
+    strcpy(http_status, "HTTP/1.0 200 OK\r\n");
     // default MIME type
     char* content_type = malloc(sizeof(char) * 100);
     assert(content_type);
-    strcpy(content_type, "Content-Type: application/octet-stream\n\n");
+    strcpy(content_type, "Content-Type: application/octet-stream\r\n\r\n");
 
     char* response = NULL;
 
@@ -114,20 +114,20 @@ int main(int argc, char** argv) {
 
         // construct http response
         if (!verifyFilePath(full_path)) {
-            strcpy(http_status, "HTTP/1.0 404 Not Found");
-            response = addStrings(http_status, "\n");
+            strcpy(http_status, "HTTP/1.0 404 Not Found\r\n\r\n");
+            response = addStrings(http_status, "");
         } else {
             // get the correct MIME type based on file extension
             const char* extension = strchr(file_path, '.'); 
             if (extension != NULL) {
                 if (strcmp(extension, ".html") == 0) {
-                    strcpy(content_type, "Content-Type: text/html\n\n");
+                    strcpy(content_type, "Content-Type: text/html\r\n\r\n");
                 } else if (strcmp(extension, ".jpeg") == 0) {
-                    strcpy(content_type, "Content-Type: image/jpeg\n\n");
+                    strcpy(content_type, "Content-Type: image/jpeg\r\n\r\n");
                 } else if (strcmp(extension, ".css") == 0) {
-                    strcpy(content_type, "Content-Type: text/css\n\n");
+                    strcpy(content_type, "Content-Type: text/css\r\n\r\n");
                 } else if (strcmp(extension, ".js") == 0) {
-                    strcpy(content_type, "Content-Type: text/javascript\n\n");
+                    strcpy(content_type, "Content-Type: text/javascript\r\n\r\n");
                 }
             }
 
