@@ -122,7 +122,7 @@ int main(int argc, char** argv) {
 
     // http response (RFC 1945)
     char* response = addStrings(http_status, content_type);
-
+    strcat(response, "\n"); // headers should be CRLF terminated
 
     // Write message back
     // n = write(newsockfd, "I got your message", 18);
