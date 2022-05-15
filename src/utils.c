@@ -5,6 +5,8 @@
 #include <assert.h>
 #include <unistd.h>
 
+#include "utils.h"
+
 /* adapted from stackoverflow post */
 char* getGetReqPath(const char* buffer) {
     const char* start = buffer;
@@ -38,16 +40,30 @@ char* getGetReqPath(const char* buffer) {
 }
 
 char* getWebRootDir(char* input_path) {
-    // check if the file path exists
-    if (access(input_path, F_OK) != 0) {
-		fprintf(stderr, "404 Bad Request, path does not exist\n");
-		exit(EXIT_FAILURE);
-    }
-
-    // if exists
-    char* root_path = malloc(strlen(input_path));
+    char* root_path = malloc(strlen(input_path) + 1);
     assert(root_path);
+
     strcpy(root_path, input_path);
 
     return root_path;
+}
+
+void verifyFilePath(char* path) {
+    if (access(path, F_OK) != 0) {
+		fprintf(stderr, "404 Not Found\n");
+		exit(EXIT_FAILURE);
+    }
+}
+
+char* addStrings(char* str1, char* str2) {
+    char* res = malloc(strlen(str1) + strlen(str2) + 1);
+    assert(res);
+
+    // copy first string to res
+    strcpy(res, str1);
+
+    // concatenate second string to res (first)
+    strcat(res, str2);
+
+    return res;
 }

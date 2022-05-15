@@ -16,16 +16,10 @@ int main(int argc, char** argv) {
 	struct sockaddr_storage client_addr;
 	socklen_t client_addr_size;
 
-    // ./server [protocol number] [port number] [path to web root]
-    // protocol number = argv[1]
-    // port number = argv[2]
-    // absolute path to web root = argv[3]
-
 	if (argc < 4) {
 		fprintf(stderr, "ERROR, not enough arguments provided\n");
 		exit(EXIT_FAILURE);
 	}
-
 
 	// Create address we're going to listen on (with given port number)
 	memset(&hints, 0, sizeof hints);
@@ -49,8 +43,9 @@ int main(int argc, char** argv) {
 		exit(EXIT_FAILURE);
 	}
 
-    // get web root directory
+    // get the web root path and verify that it exists
     char* root_path = getWebRootDir(argv[3]);
+    verifyFilePath(root_path);
 
 	// Create socket
 	sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
@@ -99,14 +94,45 @@ int main(int argc, char** argv) {
     // Null-terminate string
     buffer[n] = '\0';
 
-    char* path = getGetReqPath(buffer);
+    char* file_path = getGetReqPath(buffer);
+
+    char* full_path = addStrings(root_path, file_path);
+    verifyFilePath(full_path);
+
+    // default http status (success)
+    char* http_status = malloc(sizeof(char) * 100);
+    assert(http_status);
+    strcpy(http_status, "HTTP/1.0 200 OK\n");
+    // default MIME type
+    char* content_type = malloc(sizeof(char) * 100);
+    assert(content_type);
+    strcpy(content_type, "Content-Type: application/octet-stream\n");
+
+    // get the correct MIME type based on file extension
+    char* extension = strchr(file_path, '.');
+    if (strcmp(extension, ".html") == 0) {
+        strcpy(content_type, "Content-Type: text/html\n");
+    } else if (strcmp(extension, ".jpeg") == 0) {
+        strcpy(content_type, "Content-Type: image/jpeg\n");
+    } else if (strcmp(extension, ".css") == 0) {
+        strcpy(content_type, "Content-Type: text/css\n");
+    } else if (strcmp(extension, ".js") == 0) {
+        strcpy(content_type, "Content-Type: text/javascript\n");
+    }
+
+    // http response (RFC 1945)
+    char* response = addStrings(http_status, content_type);
+
 
     // Write message back
-    n = write(newsockfd, "I got your message", 18);
+    // n = write(newsockfd, "I got your message", 18);
+    n = send(newsockfd, response, strlen(response), 0);
     if (n < 0) {
         perror("write");
         exit(EXIT_FAILURE);
     }
+    free(http_status);
+    free(content_type);
 
     printf("DEBUG LOG:\n");
     printf("\n");
@@ -114,13 +140,15 @@ int main(int argc, char** argv) {
     printf("\n");
     printf("Here is the req message:\n%s\n", buffer);
     printf("\n");
-    printf("Here is the path:\n%s\n", path);
+    printf("Here is the path:\n%s\n", file_path);
 
 	close(sockfd);
 	close(newsockfd);
 
-    free(path);
     free(root_path);
+    free(file_path);
+    free(full_path);
+    free(response);
 
 	return 0;
 }
