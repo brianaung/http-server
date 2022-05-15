@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <assert.h>
 
 #include "utils.h"
 
@@ -25,11 +26,9 @@ int main(int argc, char** argv) {
 		exit(EXIT_FAILURE);
 	}
 
+
 	// Create address we're going to listen on (with given port number)
 	memset(&hints, 0, sizeof hints);
-
-    printf("%s\n", argv[1]);
-
     // TODO: add IPv6 support
     if (strcmp(argv[1], "4") == 0) {
 	    hints.ai_family = AF_INET; // IPv4
@@ -41,16 +40,17 @@ int main(int argc, char** argv) {
         fprintf(stderr, "ERROR, provide a valid protocol number\n");
         exit(EXIT_FAILURE);
     }
-
 	hints.ai_socktype = SOCK_STREAM; // TCP
 	hints.ai_flags = AI_PASSIVE;     // for bind, listen, accept
-
 	// node (NULL means any interface), service (port), hints, res
 	s = getaddrinfo(NULL, argv[2], &hints, &res);
 	if (s != 0) {
 		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(s));
 		exit(EXIT_FAILURE);
 	}
+
+    // get web root directory
+    char* root_path = getWebRootDir(argv[3]);
 
 	// Create socket
 	sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
@@ -90,6 +90,7 @@ int main(int argc, char** argv) {
 	}
 
     // Read characters from the connection, then process
+    // buffer is a http Req message
     n = read(newsockfd, buffer, 255); // n is number of characters read
     if (n < 0) {
         perror("read");
@@ -101,17 +102,25 @@ int main(int argc, char** argv) {
     char* path = getGetReqPath(buffer);
 
     // Write message back
-    printf("Here is the path:\n%s\n", path);
     n = write(newsockfd, "I got your message", 18);
     if (n < 0) {
         perror("write");
         exit(EXIT_FAILURE);
     }
 
+    printf("DEBUG LOG:\n");
+    printf("\n");
+    printf("Here is the web root:\n%s\n", root_path);
+    printf("\n");
+    printf("Here is the req message:\n%s\n", buffer);
+    printf("\n");
+    printf("Here is the path:\n%s\n", path);
+
 	close(sockfd);
 	close(newsockfd);
 
     free(path);
+    free(root_path);
 
 	return 0;
 }
