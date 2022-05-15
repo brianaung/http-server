@@ -84,24 +84,26 @@ int main(int argc, char** argv) {
 		exit(EXIT_FAILURE);
 	}
 
-	// Accept a connection - blocks until a connection is ready to be accepted
-	// Get back a new file descriptor to communicate on
-	client_addr_size = sizeof client_addr;
-	newsockfd =
-		accept(sockfd, (struct sockaddr*)&client_addr, &client_addr_size);
-	if (newsockfd < 0) {
-		perror("accept");
-		exit(EXIT_FAILURE);
-	}
-
+    // infinite loop so server don't close after handling single request
+    // need to use SIGINT to close it
     for (;;) {
+
+        // Accept a connection - blocks until a connection is ready to be accepted
+        // Get back a new file descriptor to communicate on
+        client_addr_size = sizeof client_addr;
+        newsockfd =
+            accept(sockfd, (struct sockaddr*)&client_addr, &client_addr_size);
+        if (newsockfd < 0) {
+            perror("accept");
+            exit(EXIT_FAILURE);
+        }
 
         // Read characters from the connection, then process
         // buffer is a http Req message
         n = read(newsockfd, buffer, 255); // n is number of characters read
         if (n < 0) {
             perror("read");
-            exit(EXIT_FAILURE);
+            // exit(EXIT_FAILURE);
         }
         // Null-terminate string
         buffer[n] = '\0';
@@ -113,7 +115,6 @@ int main(int argc, char** argv) {
         // construct http response
         if (!verifyFilePath(full_path)) {
             strcpy(http_status, "HTTP/1.0 404 Not Found");
-            // strcpy(response, http_status);
             response = addStrings(http_status, "\n");
         } else {
             // get the correct MIME type based on file extension
@@ -144,10 +145,11 @@ int main(int argc, char** argv) {
         free(file_path);
         free(full_path);
         free(response);
+
+	    close(newsockfd);
     }
 
 	close(sockfd);
-	close(newsockfd);
 
     free(root_path);
     free(http_status);
