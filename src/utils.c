@@ -48,11 +48,13 @@ char* getWebRootDir(char* input_path) {
     return root_path;
 }
 
-void verifyFilePath(char* path) {
+int verifyFilePath(char* path) {
     if (access(path, F_OK) != 0) {
-		fprintf(stderr, "404 Not Found\n");
-		exit(EXIT_FAILURE);
+		// fprintf(stderr, "404 Not Found\n");
+		// exit(EXIT_FAILURE);
+        return 0; // error 404 Not Found
     }
+    return 1;
 }
 
 char* addStrings(char* str1, char* str2) {

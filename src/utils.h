@@ -4,4 +4,4 @@ char* getWebRootDir(char* input_path);
 
 char* addStrings(char* str1, char* str2);
 
-void verifyFilePath(char* path);
+int verifyFilePath(char* path);

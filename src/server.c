@@ -16,6 +16,15 @@ int main(int argc, char** argv) {
 	struct sockaddr_storage client_addr;
 	socklen_t client_addr_size;
 
+    // default http status (success)
+    char* http_status = malloc(sizeof(char) * 100);
+    assert(http_status);
+    strcpy(http_status, "HTTP/1.0 200 OK\n");
+    // default MIME type
+    char* content_type = malloc(sizeof(char) * 100);
+    assert(content_type);
+    strcpy(content_type, "Content-Type: application/octet-stream\n\n");
+
 	if (argc < 4) {
 		fprintf(stderr, "ERROR, not enough arguments provided\n");
 		exit(EXIT_FAILURE);
@@ -85,6 +94,7 @@ int main(int argc, char** argv) {
 	}
 
     for (;;) {
+
         // Read characters from the connection, then process
         // buffer is a http Req message
         n = read(newsockfd, buffer, 255); // n is number of characters read
@@ -98,32 +108,33 @@ int main(int argc, char** argv) {
         char* file_path = getGetReqPath(buffer);
 
         char* full_path = addStrings(root_path, file_path);
-        verifyFilePath(full_path);
 
-        // default http status (success)
-        char* http_status = malloc(sizeof(char) * 100);
-        assert(http_status);
-        strcpy(http_status, "HTTP/1.0 200 OK\n");
-        // default MIME type
-        char* content_type = malloc(sizeof(char) * 100);
-        assert(content_type);
-        strcpy(content_type, "Content-Type: application/octet-stream\n\n");
+        char* response = NULL;
+        if (!verifyFilePath(full_path)) {
+            strcpy(http_status, "HTTP/1.0 404 Not Found");
+            // strcpy(response, http_status);
+            response = addStrings(http_status, "\n");
+        } else {
+            // get the correct MIME type based on file extension
+            // char* extension = malloc(sizeof(char) * 100);
+            // assert(extension);
+            // strcpy(extension, strchr(file_path, '.'));
+            const char* extension = strchr(file_path, '.'); 
+            if (extension != NULL) {
+                if (strcmp(extension, ".html") == 0) {
+                    strcpy(content_type, "Content-Type: text/html\n\n");
+                } else if (strcmp(extension, ".jpeg") == 0) {
+                    strcpy(content_type, "Content-Type: image/jpeg\n\n");
+                } else if (strcmp(extension, ".css") == 0) {
+                    strcpy(content_type, "Content-Type: text/css\n\n");
+                } else if (strcmp(extension, ".js") == 0) {
+                    strcpy(content_type, "Content-Type: text/javascript\n\n");
+                }
+            }
 
-        // get the correct MIME type based on file extension
-        char* extension = strchr(file_path, '.');
-        if (strcmp(extension, ".html") == 0) {
-            strcpy(content_type, "Content-Type: text/html\n\n");
-        } else if (strcmp(extension, ".jpeg") == 0) {
-            strcpy(content_type, "Content-Type: image/jpeg\n\n");
-        } else if (strcmp(extension, ".css") == 0) {
-            strcpy(content_type, "Content-Type: text/css\n\n");
-        } else if (strcmp(extension, ".js") == 0) {
-            strcpy(content_type, "Content-Type: text/javascript\n\n");
+            // http response (RFC 1945)
+            response = addStrings(http_status, content_type);
         }
-
-        // http response (RFC 1945)
-        char* response = addStrings(http_status, content_type);
-        // strcat(response, "\n"); // headers should be CRLF terminated
 
         // Write message back
         // n = write(newsockfd, "I got your message", 18);
@@ -134,15 +145,16 @@ int main(int argc, char** argv) {
         }
         free(file_path);
         free(full_path);
+        // free(extension);
         free(response);
-        free(http_status);
-        free(content_type);
     }
 
 	close(sockfd);
 	close(newsockfd);
 
     free(root_path);
+    free(http_status);
+    free(content_type);
 
 	return 0;
 }
