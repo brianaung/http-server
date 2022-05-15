@@ -25,6 +25,8 @@ int main(int argc, char** argv) {
     assert(content_type);
     strcpy(content_type, "Content-Type: application/octet-stream\n\n");
 
+    char* response = NULL;
+
 	if (argc < 4) {
 		fprintf(stderr, "ERROR, not enough arguments provided\n");
 		exit(EXIT_FAILURE);
@@ -54,7 +56,6 @@ int main(int argc, char** argv) {
 
     // get the web root path and verify that it exists
     char* root_path = getWebRootDir(argv[3]);
-    verifyFilePath(root_path);
 
 	// Create socket
 	sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
@@ -105,20 +106,17 @@ int main(int argc, char** argv) {
         // Null-terminate string
         buffer[n] = '\0';
 
+        // get the path of the requested file
         char* file_path = getGetReqPath(buffer);
-
         char* full_path = addStrings(root_path, file_path);
 
-        char* response = NULL;
+        // construct http response
         if (!verifyFilePath(full_path)) {
             strcpy(http_status, "HTTP/1.0 404 Not Found");
             // strcpy(response, http_status);
             response = addStrings(http_status, "\n");
         } else {
             // get the correct MIME type based on file extension
-            // char* extension = malloc(sizeof(char) * 100);
-            // assert(extension);
-            // strcpy(extension, strchr(file_path, '.'));
             const char* extension = strchr(file_path, '.'); 
             if (extension != NULL) {
                 if (strcmp(extension, ".html") == 0) {
@@ -145,7 +143,6 @@ int main(int argc, char** argv) {
         }
         free(file_path);
         free(full_path);
-        // free(extension);
         free(response);
     }
 
