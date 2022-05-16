@@ -6,6 +6,8 @@
 #include <string.h>
 #include <unistd.h>
 #include <assert.h>
+#include <sys/sendfile.h>
+#include <fcntl.h>
 
 #include "utils.h"
 
@@ -19,12 +21,18 @@ int main(int argc, char** argv) {
     // default http status (success)
     char* http_status = malloc(sizeof(char) * 100);
     assert(http_status);
-    strcpy(http_status, "HTTP/1.0 200 OK\r\n");
     // default MIME type
     char* content_type = malloc(sizeof(char) * 100);
     assert(content_type);
-    strcpy(content_type, "Content-Type: application/octet-stream\r\n\r\n");
 
+
+    char* root_path = NULL;
+    char* file_path = NULL; 
+    char* full_path = NULL;
+    FILE* file;
+    int fd = 0;
+    const char* extension;
+    size_t size = 0;
     char* response = NULL;
 
 	if (argc < 4) {
@@ -55,7 +63,7 @@ int main(int argc, char** argv) {
 	}
 
     // get the web root path and verify that it exists
-    char* root_path = getWebRootDir(argv[3]);
+    root_path = getWebRootDir(argv[3]);
 
 	// Create socket
 	sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
@@ -103,26 +111,26 @@ int main(int argc, char** argv) {
         n = read(newsockfd, buffer, 255); // n is number of characters read
         if (n < 0) {
             perror("read");
-            // exit(EXIT_FAILURE);
+            exit(EXIT_FAILURE);
         }
         // Null-terminate string
         buffer[n] = '\0';
 
         // get the path of the requested file
-        char* file_path = getGetReqPath(buffer);
-        char* full_path = addStrings(root_path, file_path);
+        file_path = getGetReqPath(buffer);
+        full_path = addStrings(root_path, file_path);
 
+        // first initialise with default success values
+        strcpy(http_status, "HTTP/1.0 200 OK\r\n");
+        strcpy(content_type, "Content-Type: application/octet-stream\r\n\r\n");
         // construct http response
-        if (!verifyFilePath(full_path)) {
-            strcpy(http_status, "HTTP/1.0 404 Not Found\r\n\r\n");
-            response = addStrings(http_status, "");
-        } else {
-            // get the correct MIME type based on file extension
-            const char* extension = strchr(file_path, '.'); 
+        if ((file = fopen(full_path, "r"))) {
+            fd = open(full_path, O_RDONLY);
+            extension = strchr(file_path, '.'); 
             if (extension != NULL) {
                 if (strcmp(extension, ".html") == 0) {
                     strcpy(content_type, "Content-Type: text/html\r\n\r\n");
-                } else if (strcmp(extension, ".jpeg") == 0) {
+                } else if (strcmp(extension, ".jpg") == 0) {
                     strcpy(content_type, "Content-Type: image/jpeg\r\n\r\n");
                 } else if (strcmp(extension, ".css") == 0) {
                     strcpy(content_type, "Content-Type: text/css\r\n\r\n");
@@ -130,9 +138,20 @@ int main(int argc, char** argv) {
                     strcpy(content_type, "Content-Type: text/javascript\r\n\r\n");
                 }
             }
-
             // http response (RFC 1945)
             response = addStrings(http_status, content_type);
+
+            // get file size
+            fseek(file, 0, SEEK_END); // seek to end of file
+            size = ftell(file);
+            fseek(file, 0, SEEK_SET);
+
+            fclose(file);
+
+            // printf("file size %zu\n", size);
+        } else {
+            strcpy(http_status, "HTTP/1.0 404 Not Found\r\n\r\n");
+            response = addStrings(http_status, "");
         }
 
         // Write message back
@@ -142,10 +161,23 @@ int main(int argc, char** argv) {
             perror("write");
             exit(EXIT_FAILURE);
         }
+        // send file only when the file exists
+        if (fd > 0) {
+            n = sendfile(newsockfd, fd, NULL, size);
+            if (n < 0) {
+                perror("write");
+                exit(EXIT_FAILURE);
+            }
+        }
+
+        // DEBUG
+        printf("%s\n", full_path);
+
         free(file_path);
         free(full_path);
         free(response);
 
+        close(fd);
 	    close(newsockfd);
     }
 
