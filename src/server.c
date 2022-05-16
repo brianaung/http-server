@@ -18,22 +18,21 @@ int main(int argc, char** argv) {
 	struct sockaddr_storage client_addr;
 	socklen_t client_addr_size;
 
-    // default http status (success)
-    char* http_status = malloc(sizeof(char) * 100);
-    assert(http_status);
-    // default MIME type
-    char* content_type = malloc(sizeof(char) * 100);
-    assert(content_type);
-
-
     char* root_path = NULL;
     char* file_path = NULL; 
     char* full_path = NULL;
+
     FILE* file;
-    int fd = 0;
     const char* extension;
     size_t size = 0;
+    int fd = 0;
+
+    char* http_status = malloc(sizeof(char) * 100);
+    assert(http_status);
+    char* content_type = malloc(sizeof(char) * 100);
+    assert(content_type);
     char* response = NULL;
+
 
 	if (argc < 4) {
 		fprintf(stderr, "ERROR, not enough arguments provided\n");
@@ -102,22 +101,28 @@ int main(int argc, char** argv) {
         newsockfd =
             accept(sockfd, (struct sockaddr*)&client_addr, &client_addr_size);
         if (newsockfd < 0) {
-            perror("accept");
-            exit(EXIT_FAILURE);
+            // perror("accept");
+            // exit(EXIT_FAILURE);
+            continue;
         }
 
         // Read characters from the connection, then process
         // buffer is a http Req message
         n = read(newsockfd, buffer, 255); // n is number of characters read
         if (n < 0) {
-            perror("read");
-            exit(EXIT_FAILURE);
+            // perror("read");
+            close(newsockfd);
+            continue;
         }
         // Null-terminate string
         buffer[n] = '\0';
 
         // get the path of the requested file
         file_path = getGetReqPath(buffer);
+        if (strcmp(file_path, "400") == 0) {
+            close(newsockfd);
+            continue;
+        }
         full_path = addStrings(root_path, file_path);
 
         // first initialise with default success values
@@ -158,20 +163,19 @@ int main(int argc, char** argv) {
         // n = write(newsockfd, "I got your message", 18);
         n = send(newsockfd, response, strlen(response), 0);
         if (n < 0) {
-            perror("write");
-            exit(EXIT_FAILURE);
+            // perror("write");
+            close(newsockfd);
+            continue;
         }
         // send file only when the file exists
         if (fd > 0) {
             n = sendfile(newsockfd, fd, NULL, size);
             if (n < 0) {
-                perror("write");
-                exit(EXIT_FAILURE);
+                // perror("write");
+                close(newsockfd);
+                continue;
             }
         }
-
-        // DEBUG
-        printf("%s\n", full_path);
 
         free(file_path);
         free(full_path);

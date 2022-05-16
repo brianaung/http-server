@@ -17,8 +17,10 @@ char* getGetReqPath(const char* buffer) {
 
     /* make sure GET is at the start of the path */
     if (strncmp("GET ", start, 4)) {
-		fprintf(stderr, "Parse Error: GET is missing\n");
-		exit(EXIT_FAILURE);
+		// fprintf(stderr, "Parse Error: GET is missing\n");
+        path = malloc(strlen("400"));
+        strcpy(path, "400");
+        return path;
     }
 
     /* move the start pointer to get rid of "GET<whitespace>" */
