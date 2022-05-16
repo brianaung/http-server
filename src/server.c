@@ -1,3 +1,4 @@
+#define IMPLEMENTS_IPV6
 // the original socket creation and accepting connection code is based on Comp30023 Lab 9 code.
 #define _POSIX_C_SOURCE 200112L
 #include <netdb.h>
@@ -14,7 +15,7 @@
 int main(int argc, char** argv) {
 	int sockfd, newsockfd, n, re, s;
 	char buffer[256];
-	struct addrinfo hints, *res;
+	struct addrinfo hints, *res, *p;
 	struct sockaddr_storage client_addr;
 	socklen_t client_addr_size;
 
@@ -41,35 +42,55 @@ int main(int argc, char** argv) {
 
 	// Create address we're going to listen on (with given port number)
 	memset(&hints, 0, sizeof hints);
-    // TODO: add IPv6 support
+    hints.ai_socktype = SOCK_STREAM; // TCP
+    hints.ai_flags = AI_PASSIVE;     // for bind, listen, accept
     if (strcmp(argv[1], "4") == 0) {
 	    hints.ai_family = AF_INET; // IPv4
+                                         
+	    // node (NULL means any interface), service (port), hints, res
+        s = getaddrinfo(NULL, argv[2], &hints, &res);
+        if (s != 0) {
+            fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(s));
+            exit(EXIT_FAILURE);
+        }
+
+        // Create socket
+        sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+        if (sockfd < 0) {
+            perror("socket");
+            exit(EXIT_FAILURE);
+        }
+
     } else if (strcmp(argv[1], "6") == 0) {
         // create socket for IPv6
-        fprintf(stderr, "ERROR, IPv6 currently not supported\n");
-        exit(EXIT_FAILURE);
+        hints.ai_family = AF_INET6; 
+                                         
+	    // node (NULL means any interface), service (port), hints, res
+        s = getaddrinfo(NULL, argv[2], &hints, &res);
+        if (s != 0) {
+            fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(s));
+            exit(EXIT_FAILURE);
+        }
+
+        // Create socket
+        // based on week 8 lecture 2c code
+        for (p = res; p != NULL; p = p->ai_next) {
+            if (p->ai_family == AF_INET6 &&
+                    (sockfd = socket(p->ai_family,
+                                   p->ai_socktype,
+                                   p->ai_protocol)) < 0) {
+                perror("socket");
+                exit(EXIT_FAILURE);
+            }
+        }
+        
     } else {
         fprintf(stderr, "ERROR, provide a valid protocol number\n");
         exit(EXIT_FAILURE);
     }
-	hints.ai_socktype = SOCK_STREAM; // TCP
-	hints.ai_flags = AI_PASSIVE;     // for bind, listen, accept
-	// node (NULL means any interface), service (port), hints, res
-	s = getaddrinfo(NULL, argv[2], &hints, &res);
-	if (s != 0) {
-		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(s));
-		exit(EXIT_FAILURE);
-	}
 
     // get the web root path and verify that it exists
     root_path = getWebRootDir(argv[3]);
-
-	// Create socket
-	sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-	if (sockfd < 0) {
-		perror("socket");
-		exit(EXIT_FAILURE);
-	}
 
 	// Reuse port if possible
 	re = 1;
