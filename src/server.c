@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <assert.h>
 #include <sys/sendfile.h>
+#include <sys/stat.h>
 #include <fcntl.h>
 
 #include "utils.h"
@@ -19,15 +20,14 @@ int main(int argc, char** argv) {
 	struct sockaddr_storage client_addr;
 	socklen_t client_addr_size;
 
-    char* root_path = NULL;
-    char* file_path = NULL; 
+    char* root_path = NULL;  // web root path
+    char* file_path = NULL;  // path to file from get request
     char* full_path = NULL;
-
-    FILE* file;
     const char* extension;
-    size_t size = 0;
     int fd = 0;
+    struct stat fstat;
 
+    // variables to store http response
     char* http_status = malloc(sizeof(char) * 100);
     assert(http_status);
     char* content_type = malloc(sizeof(char) * 100);
@@ -45,7 +45,8 @@ int main(int argc, char** argv) {
     hints.ai_socktype = SOCK_STREAM; // TCP
     hints.ai_flags = AI_PASSIVE;     // for bind, listen, accept
     if (strcmp(argv[1], "4") == 0) {
-	    hints.ai_family = AF_INET; // IPv4
+        // create socket for IPv4
+	    hints.ai_family = AF_INET; 
                                          
 	    // node (NULL means any interface), service (port), hints, res
         s = getaddrinfo(NULL, argv[2], &hints, &res);
@@ -89,9 +90,6 @@ int main(int argc, char** argv) {
         exit(EXIT_FAILURE);
     }
 
-    // get the web root path and verify that it exists
-    root_path = getWebRootDir(argv[3]);
-
 	// Reuse port if possible
 	re = 1;
 	if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &re, sizeof(int)) < 0) {
@@ -112,6 +110,9 @@ int main(int argc, char** argv) {
 		exit(EXIT_FAILURE);
 	}
 
+    // get the web root path and verify that it exists
+    root_path = getWebRootDir(argv[3]);
+
     // infinite loop so server don't close after handling single request
     // need to use SIGINT to close it
     for (;;) {
@@ -122,8 +123,7 @@ int main(int argc, char** argv) {
         newsockfd =
             accept(sockfd, (struct sockaddr*)&client_addr, &client_addr_size);
         if (newsockfd < 0) {
-            // perror("accept");
-            // exit(EXIT_FAILURE);
+            perror("accept");
             continue;
         }
 
@@ -131,7 +131,7 @@ int main(int argc, char** argv) {
         // buffer is a http Req message
         n = read(newsockfd, buffer, 255); // n is number of characters read
         if (n < 0) {
-            // perror("read");
+            perror("read");
             close(newsockfd);
             continue;
         }
@@ -145,54 +145,48 @@ int main(int argc, char** argv) {
             continue;
         }
         full_path = addStrings(root_path, file_path);
+        fd = open(full_path, O_RDONLY);
 
-        // first initialise with default success values
-        strcpy(http_status, "HTTP/1.0 200 OK\r\n");
-        strcpy(content_type, "Content-Type: application/octet-stream\r\n\r\n");
-        // construct http response
-        if ((file = fopen(full_path, "r"))) {
-            fd = open(full_path, O_RDONLY);
+        // construct http response (RFC 1945)
+        if (fd > 0) {
+            // success
+            strcpy(http_status, "HTTP/1.0 200 OK\r\n");
+
             extension = strchr(file_path, '.'); 
-            if (extension != NULL) {
-                if (strcmp(extension, ".html") == 0) {
-                    strcpy(content_type, "Content-Type: text/html\r\n\r\n");
-                } else if (strcmp(extension, ".jpg") == 0) {
-                    strcpy(content_type, "Content-Type: image/jpeg\r\n\r\n");
-                } else if (strcmp(extension, ".css") == 0) {
-                    strcpy(content_type, "Content-Type: text/css\r\n\r\n");
-                } else if (strcmp(extension, ".js") == 0) {
-                    strcpy(content_type, "Content-Type: text/javascript\r\n\r\n");
-                }
+            if (!extension) {
+                // unknown file type
+                strcpy(content_type, "Content-Type: application/octet-stream\r\n\r\n");
+            } else if (strcmp(extension, ".html") == 0) {
+                strcpy(content_type, "Content-Type: text/html\r\n\r\n");
+            } else if (strcmp(extension, ".jpg") == 0) {
+                strcpy(content_type, "Content-Type: image/jpeg\r\n\r\n");
+            } else if (strcmp(extension, ".css") == 0) {
+                strcpy(content_type, "Content-Type: text/css\r\n\r\n");
+            } else if (strcmp(extension, ".js") == 0) {
+                strcpy(content_type, "Content-Type: text/javascript\r\n\r\n");
             }
             // http response (RFC 1945)
             response = addStrings(http_status, content_type);
 
-            // get file size
-            fseek(file, 0, SEEK_END); // seek to end of file
-            size = ftell(file);
-            fseek(file, 0, SEEK_SET);
-
-            fclose(file);
-
-            // printf("file size %zu\n", size);
         } else {
+            perror("error");
             strcpy(http_status, "HTTP/1.0 404 Not Found\r\n\r\n");
             response = addStrings(http_status, "");
         }
 
         // Write message back
-        // n = write(newsockfd, "I got your message", 18);
         n = send(newsockfd, response, strlen(response), 0);
         if (n < 0) {
-            // perror("write");
+            perror("write");
             close(newsockfd);
             continue;
         }
+
         // send file only when the file exists
-        if (fd > 0) {
-            n = sendfile(newsockfd, fd, NULL, size);
+        if (fd > 0 && (stat(full_path, &fstat) == 0)) {
+            n = sendfile(newsockfd, fd, NULL, fstat.st_size);
             if (n < 0) {
-                // perror("write");
+                perror("write");
                 close(newsockfd);
                 continue;
             }

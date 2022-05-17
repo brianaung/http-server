@@ -42,7 +42,7 @@ char* getGetReqPath(const char* buffer) {
 }
 
 char* getWebRootDir(char* input_path) {
-    char* root_path = malloc(strlen(input_path) + 1);
+    char* root_path = malloc(strlen(input_path) + 100);
     assert(root_path);
 
     strcpy(root_path, input_path);
@@ -50,18 +50,10 @@ char* getWebRootDir(char* input_path) {
     return root_path;
 }
 
-int openFile(char* fname) {
-  //   if (access(fname, F_OK) != 0) {
-		// // fprintf(stderr, "404 Not Found\n");
-		// // exit(EXIT_FAILURE);
-  //       return 0; // error 404 Not Found
-  //   }
-  //   return 1;
-    FILE* file;
-    if ((file = fopen(fname, "r"))) {
-        return 1;
-    }
-    return 0; // error 404 not found
+void prepend(char* s, const char* t) {
+    size_t len = strlen(t);
+    memmove(s + len, s, strlen(s) + 1);
+    memcpy(s, t, len);
 }
 
 char* addStrings(char* str1, char* str2) {
