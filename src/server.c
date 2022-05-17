@@ -182,6 +182,13 @@ int main(int argc, char** argv) {
             continue;
         }
 
+        /* ---- Reason for using sendfile() over other alternatives ---- */
+        // sendfile() copies data between two file descriptors and this copying 
+        // is done in the kernel space.
+        // it is therefore more efficient than using read() and write() which 
+        // requires transferring data to and from user space.
+        /* from Linux manual page */
+
         // send file only when the file exists
         if (fd > 0 && (stat(full_path, &fstat) == 0)) {
             n = sendfile(newsockfd, fd, NULL, fstat.st_size);
