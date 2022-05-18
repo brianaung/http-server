@@ -7,7 +7,7 @@
 
 #include "utils.h"
 
-/* adapted from stackoverflow post */
+/* given a http request buffer, extract out the path name */
 char* getGetReqPath(const char* buffer) {
     const char* start = buffer;
     const char* end;
@@ -17,7 +17,7 @@ char* getGetReqPath(const char* buffer) {
 
     /* make sure GET is at the start of the path */
     if (strncmp("GET ", start, 4)) {
-		// fprintf(stderr, "Parse Error: GET is missing\n");
+		fprintf(stderr, "Parse Error: GET is missing\n");
         path = malloc(strlen("400"));
         strcpy(path, "400");
         return path;
@@ -27,20 +27,21 @@ char* getGetReqPath(const char* buffer) {
     start += 4;
 
     end = start;
-    while (*end && !isspace(*end)) ++end;
+    while (*end && !isspace(*end)) {
+        ++end;
+    }
     path_len = (end - start);
     path = malloc(path_len + 1);
     assert(path);
 
-    // copy path
+    /* copy path */
     memcpy(path, start, path_len);
-
-    // null terminate string
     path[path_len] = '\0';
 
     return path;
 }
 
+/* from the program argument, get the absolute root web directory */
 char* getWebRootDir(char* input_path) {
     char* root_path = malloc(strlen(input_path) + 1);
     assert(root_path);
@@ -50,34 +51,34 @@ char* getWebRootDir(char* input_path) {
     return root_path;
 }
 
-void prepend(char* s, const char* t) {
-    size_t len = strlen(t);
-    memmove(s + len, s, strlen(s) + 1);
-    memcpy(s, t, len);
-}
-
+/* add 2 given strings together and return a new string */
 char* addStrings(char* str1, char* str2) {
-    char* res = malloc(strlen(str1) + strlen(str2) + 1);
-    assert(res);
+    char* ret = malloc(strlen(str1) + strlen(str2) + 1);
+    assert(ret);
 
-    // copy first string to res
-    strcpy(res, str1);
+    /* copy first string to ret */
+    strcpy(ret, str1);
 
-    // concatenate second string to res (first)
-    strcat(res, str2);
+    /* concatenate second string to ret (first) */
+    strcat(ret, str2);
 
-    return res;
+    return ret;
 }
 
-char* strRemove(char* str, const char* sub) {
+/* remove substring from a given string */
+char* removeSubStr(char* str, const char* sub_str) {
     char *p, *q, *r;
 
-    if (*sub && (q = r = strstr(str, sub)) != NULL) {
-        size_t len = strlen(sub);
-        while ((r = strstr(p = r + len, sub)) != NULL) {
-            while (p < r) { *q++ = *p++; }
+    if (*sub_str && (q = r = strstr(str, sub_str)) != NULL) {
+        size_t len = strlen(sub_str);
+        while ((r = strstr(p = r + len, sub_str)) != NULL) {
+            while (p < r) { 
+                *q++ = *p++; 
+            }
         }
-        while ((*q++ = *p++) != '\0') { continue; }
+        while ((*q++ = *p++) != '\0') { 
+            continue; 
+        }
     }
 
     return str;
