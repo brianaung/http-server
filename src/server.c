@@ -36,8 +36,6 @@ int main(int argc, char** argv) {
     assert(content_type);
     char* response = NULL;
 
-
-
 	if (argc < 4) {
 		fprintf(stderr, "ERROR, not enough arguments provided\n");
 		exit(EXIT_FAILURE);
@@ -146,6 +144,7 @@ int main(int argc, char** argv) {
             continue;
         }
         full_path = addStrings(root_path, file_path);
+        full_path = strRemove(full_path, "/..");
         printf("%s\n", full_path);
         fd = open(full_path, O_RDONLY);
 
