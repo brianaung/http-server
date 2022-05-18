@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -g
+CFLAGS = -Wall -Wextra -pthread -g
 
 SRC = src/server.c \
 	  src/utils.c \
