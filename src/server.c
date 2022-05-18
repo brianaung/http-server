@@ -144,11 +144,9 @@ int main(int argc, char** argv) {
             continue;
         }
         full_path = addStrings(root_path, file_path);
-        /* remove the ../ ./ from the path to prevent going back directory */
+        /* remove the ../ from the path to prevent going back directory */
         full_path = strRemove(full_path, "../");
-        full_path = strRemove(full_path, "./");
         full_path = strRemove(full_path, "..\0");
-        full_path = strRemove(full_path, ".\0");
         fd = open(full_path, O_RDONLY);
 
         // construct http response (RFC 1945)
