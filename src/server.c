@@ -146,7 +146,6 @@ int main(int argc, char** argv) {
             continue;
         }
         full_path = addStrings(root_path, file_path);
-        full_path = strRemove(full_path, "/..");
         printf("%s\n", full_path);
         fd = open(full_path, O_RDONLY);
 
