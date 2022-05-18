@@ -42,7 +42,7 @@ char* getGetReqPath(const char* buffer) {
 }
 
 char* getWebRootDir(char* input_path) {
-    char* root_path = malloc(strlen(input_path) + 100);
+    char* root_path = malloc(strlen(input_path) + 1);
     assert(root_path);
 
     strcpy(root_path, input_path);
@@ -67,4 +67,18 @@ char* addStrings(char* str1, char* str2) {
     strcat(res, str2);
 
     return res;
+}
+
+char* strRemove(char* str, const char* sub) {
+    char *p, *q, *r;
+
+    if (*sub && (q = r = strstr(str, sub)) != NULL) {
+        size_t len = strlen(sub);
+        while ((r = strstr(p = r + len, sub)) != NULL) {
+            while (p < r) { *q++ = *p++; }
+        }
+        while ((*q++ = *p++) != '\0') { continue; }
+    }
+
+    return str;
 }

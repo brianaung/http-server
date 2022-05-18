@@ -10,6 +10,8 @@
 #include <sys/sendfile.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+// for multithreaded server
+#include <pthread.h>
 
 #include "utils.h"
 
@@ -35,6 +37,7 @@ int main(int argc, char** argv) {
     char* response = NULL;
 
 
+
 	if (argc < 4) {
 		fprintf(stderr, "ERROR, not enough arguments provided\n");
 		exit(EXIT_FAILURE);
@@ -45,8 +48,7 @@ int main(int argc, char** argv) {
     hints.ai_socktype = SOCK_STREAM; // TCP
     hints.ai_flags = AI_PASSIVE;     // for bind, listen, accept
     if (strcmp(argv[1], "4") == 0) {
-        // create socket for IPv4
-	    hints.ai_family = AF_INET; 
+	    hints.ai_family = AF_INET;  // IPv4
                                          
 	    // node (NULL means any interface), service (port), hints, res
         s = getaddrinfo(NULL, argv[2], &hints, &res);
@@ -63,8 +65,7 @@ int main(int argc, char** argv) {
         }
 
     } else if (strcmp(argv[1], "6") == 0) {
-        // create socket for IPv6
-        hints.ai_family = AF_INET6; 
+        hints.ai_family = AF_INET6;  // IPv6
                                          
 	    // node (NULL means any interface), service (port), hints, res
         s = getaddrinfo(NULL, argv[2], &hints, &res);
@@ -73,7 +74,7 @@ int main(int argc, char** argv) {
             exit(EXIT_FAILURE);
         }
 
-        // Create socket
+        // Create socket for IPv6
         // based on week 8 lecture 2c code
         for (p = res; p != NULL; p = p->ai_next) {
             if (p->ai_family == AF_INET6 &&
@@ -145,6 +146,8 @@ int main(int argc, char** argv) {
             continue;
         }
         full_path = addStrings(root_path, file_path);
+        full_path = strRemove(full_path, "/..");
+        printf("%s\n", full_path);
         fd = open(full_path, O_RDONLY);
 
         // construct http response (RFC 1945)
