@@ -14,6 +14,3 @@ $(MAIN): $(OBJ) makefile
 
 clean: 
 	rm -f $(OBJ) $(MAIN)
-
-run:
-	valgrind --leak-check=full --track-origins=yes ./server 4 3000 /home/brian/www

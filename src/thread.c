@@ -1,14 +1,14 @@
+#include <netdb.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/sendfile.h>
 #include <sys/stat.h>
 
-#include "thread.h"
 #include "utils.h"
+#include "thread.h"
 
 void* thread_connection(void* arg) {
     /* localised pthread arguments and free it */
@@ -17,7 +17,7 @@ void* thread_connection(void* arg) {
     char* root_path = thread_args->root_path;
     free(arg);
     /* for path name extraction and opening requested file */
-    char buffer[1024];
+    char buffer[STRLEN_L];
     char* file_path;
     char* full_path;
     const char* extension;
@@ -25,20 +25,16 @@ void* thread_connection(void* arg) {
     int fd = 0;
     /* to store http response */
     char* response = NULL;
-    char http_status[256];
-    // assert(http_status);
-    char content_type[256];
-    // assert(content_type);
+    char http_status[STRLEN_S];
+    char content_type[STRLEN_S];
 
     int buf_len = 0; /* total length */
     int n = 0; /* num of chars read */
     /* wait for request to be over - detect crlf */
     while (1) {
-        n = read(newsockfd, &buffer[buf_len], 255);
+        n = read(newsockfd, &buffer[buf_len], STRLEN_L);
         if (n < 0) {
             perror("read");
-            // free(http_status);
-            // free(content_type);
             free(root_path);
             close(newsockfd);
             return NULL;
@@ -56,15 +52,11 @@ void* thread_connection(void* arg) {
     file_path = getGetReqPath(buffer);
     if (strcmp(file_path, "400") == 0) {
         free(file_path);
-        // free(http_status);
-        // free(content_type);
         free(root_path);
         close(newsockfd);
         return NULL;
     } else if (strcmp(file_path, "/") == 0) {
         free(file_path);
-        // free(http_status);
-        // free(content_type);
         free(root_path);
         close(newsockfd);
         return NULL;
@@ -105,11 +97,9 @@ void* thread_connection(void* arg) {
     if (n < 0) {
         perror("write");
         free(file_path);
+        free(root_path);
         free(full_path);
         free(response);
-        // free(http_status);
-        // free(content_type);
-        free(root_path);
         close(newsockfd);
         return NULL;
     }
@@ -128,11 +118,9 @@ void* thread_connection(void* arg) {
         if (n < 0) {
             perror("write");
             free(file_path);
+            free(root_path);
             free(full_path);
             free(response);
-            // free(http_status);
-            // free(content_type);
-            free(root_path);
             close(newsockfd);
             return NULL;
         }
@@ -140,11 +128,9 @@ void* thread_connection(void* arg) {
 
     /* clean up */
     free(file_path);
+    free(root_path);
     free(full_path);
     free(response);
-    // free(http_status);
-    // free(content_type);
-    free(root_path);
 
     close(newsockfd);
 

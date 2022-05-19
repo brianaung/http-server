@@ -1,3 +1,7 @@
+#define STRLEN_S 256
+#define STRLEN_L 2048
+#define CONN_IN 10
+
 /* given a http request buffer, extract out the path name */
 char* getGetReqPath(const char* buffer);
 

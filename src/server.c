@@ -18,8 +18,6 @@
 #include "utils.h"
 #include "thread.h"
 
-#define CONN_IN 10
-
 
 int main(int argc, char** argv) {
 
