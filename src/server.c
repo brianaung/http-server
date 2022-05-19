@@ -39,7 +39,7 @@ int main(int argc, char** argv) {
 	socklen_t client_addr_size;
     /* for threads */
     pthread_t tid;
-    pthread_attr_t pthread_attr;
+    // pthread_attr_t pthread_attr;
     struct thread_args *thread_args;
 
 	if (argc < 4) {
@@ -107,14 +107,14 @@ int main(int argc, char** argv) {
 	}
 
     /* initialise pthread attribute */
-    if (pthread_attr_init(&pthread_attr) != 0) {
-        perror("pthread_attr_init");
-        exit(EXIT_FAILURE);
-    }
-    if (pthread_attr_setdetachstate(&pthread_attr, PTHREAD_CREATE_DETACHED) != 0) {
-        perror("pthread_attr_setdetachstate");
-        exit(EXIT_FAILURE);
-    }
+    // if (pthread_attr_init(&pthread_attr) != 0) {
+    //     perror("pthread_attr_init");
+    //     exit(EXIT_FAILURE);
+    // }
+    // if (pthread_attr_setdetachstate(&pthread_attr, PTHREAD_CREATE_DETACHED) != 0) {
+    //     perror("pthread_attr_setdetachstate");
+    //     exit(EXIT_FAILURE);
+    // }
 
     /* infinite loop so server don't close after handling single request */
     for (;;) {
@@ -140,10 +140,14 @@ int main(int argc, char** argv) {
         /* initialise thread arguments and create thread */
         thread_args->newsockfd = newsockfd;
         thread_args->root_path = getWebRootDir(argv[3]);
-        if (pthread_create(&tid, &pthread_attr, thread_connection, 
+        if (pthread_create(&tid, NULL, thread_connection, 
                     (void*)thread_args) != 0) {
             perror("pthread");
             free(thread_args);
+            continue;
+        }
+        if (pthread_join(tid, NULL)) {
+            perror("pthread");
             continue;
         }
     }
