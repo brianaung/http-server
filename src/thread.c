@@ -64,33 +64,34 @@ void* thread_connection(void* arg) {
 
     /* get the full path name (also handle path_escape) */
     full_path = addStrings(root_path, file_path);
-    full_path = removeSubStr(full_path, "../");
-    full_path = removeSubStr(full_path, "..\0");
+    strcpy(http_status, "HTTP/1.0 404 Not Found\r\n\r\n");
+    response = addStrings(http_status, "");
+    char* x;
+    if ((x = strstr(full_path, "../")) == NULL ||
+            (x = strstr(full_path, "..\0")) == NULL) {
+        /* construct http response (RFC 1945) */
+        if ((fd = open(full_path, O_RDONLY)) > 0) {
 
-    /* construct http response (RFC 1945) */
-    if ((fd = open(full_path, O_RDONLY)) > 0) {
+            strcpy(http_status, "HTTP/1.0 200 OK\r\n");
 
-        strcpy(http_status, "HTTP/1.0 200 OK\r\n");
-
-        extension = strchr(file_path, '.'); 
-        if (!extension) {
-            /* unknown file type */
-            strcpy(content_type, "Content-Type: application/octet-stream\r\n\r\n");
-        } else if (strcmp(extension, ".html") == 0) {
-            strcpy(content_type, "Content-Type: text/html\r\n\r\n");
-        } else if (strcmp(extension, ".jpg") == 0) {
-            strcpy(content_type, "Content-Type: image/jpeg\r\n\r\n");
-        } else if (strcmp(extension, ".css") == 0) {
-            strcpy(content_type, "Content-Type: text/css\r\n\r\n");
-        } else if (strcmp(extension, ".js") == 0) {
-            strcpy(content_type, "Content-Type: text/javascript\r\n\r\n");
+            extension = strchr(file_path, '.'); 
+            if (!extension) {
+                /* unknown file type */
+                strcpy(content_type, "Content-Type: application/octet-stream\r\n\r\n");
+            } else if (strcmp(extension, ".html") == 0) {
+                strcpy(content_type, "Content-Type: text/html\r\n\r\n");
+            } else if (strcmp(extension, ".jpg") == 0) {
+                strcpy(content_type, "Content-Type: image/jpeg\r\n\r\n");
+            } else if (strcmp(extension, ".css") == 0) {
+                strcpy(content_type, "Content-Type: text/css\r\n\r\n");
+            } else if (strcmp(extension, ".js") == 0) {
+                strcpy(content_type, "Content-Type: text/javascript\r\n\r\n");
+            }
+            response = addStrings(http_status, content_type);
         }
-        response = addStrings(http_status, content_type);
-    } else {
-        perror("read");
-        strcpy(http_status, "HTTP/1.0 404 Not Found\r\n\r\n");
-        response = addStrings(http_status, "");
     }
+    // full_path = removeSubStr(full_path, "../");
+    // full_path = removeSubStr(full_path, "..\0");
 
     /* Write message back */
     n = send(newsockfd, response, strlen(response), 0);
