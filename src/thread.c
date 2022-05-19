@@ -25,10 +25,10 @@ void* thread_connection(void* arg) {
     int fd = 0;
     /* to store http response */
     char* response = NULL;
-    char* http_status = malloc(sizeof(char) * 100);
-    assert(http_status);
-    char* content_type = malloc(sizeof(char) * 100);
-    assert(content_type);
+    char http_status[256];
+    // assert(http_status);
+    char content_type[256];
+    // assert(content_type);
 
     int buf_len = 0; /* total length */
     int n = 0; /* num of chars read */
@@ -37,8 +37,8 @@ void* thread_connection(void* arg) {
         n = read(newsockfd, &buffer[buf_len], 255);
         if (n < 0) {
             perror("read");
-            free(http_status);
-            free(content_type);
+            // free(http_status);
+            // free(content_type);
             free(root_path);
             close(newsockfd);
             return NULL;
@@ -56,15 +56,15 @@ void* thread_connection(void* arg) {
     file_path = getGetReqPath(buffer);
     if (strcmp(file_path, "400") == 0) {
         free(file_path);
-        free(http_status);
-        free(content_type);
+        // free(http_status);
+        // free(content_type);
         free(root_path);
         close(newsockfd);
         return NULL;
     } else if (strcmp(file_path, "/") == 0) {
         free(file_path);
-        free(http_status);
-        free(content_type);
+        // free(http_status);
+        // free(content_type);
         free(root_path);
         close(newsockfd);
         return NULL;
@@ -107,8 +107,8 @@ void* thread_connection(void* arg) {
         free(file_path);
         free(full_path);
         free(response);
-        free(http_status);
-        free(content_type);
+        // free(http_status);
+        // free(content_type);
         free(root_path);
         close(newsockfd);
         return NULL;
@@ -130,8 +130,8 @@ void* thread_connection(void* arg) {
             free(file_path);
             free(full_path);
             free(response);
-            free(http_status);
-            free(content_type);
+            // free(http_status);
+            // free(content_type);
             free(root_path);
             close(newsockfd);
             return NULL;
@@ -142,8 +142,8 @@ void* thread_connection(void* arg) {
     free(file_path);
     free(full_path);
     free(response);
-    free(http_status);
-    free(content_type);
+    // free(http_status);
+    // free(content_type);
     free(root_path);
 
     close(newsockfd);
