@@ -10,6 +10,3 @@ char* getWebRootDir(char* input_path);
 
 /* add 2 given strings together and return a new string */
 char* addStrings(char* str1, char* str2);
-
-/* remove substring from a given string */
-char* removeSubStr(char* str, const char* sub);

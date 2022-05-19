@@ -63,22 +63,3 @@ char* addStrings(char* str1, char* str2) {
 
     return ret;
 }
-
-/* remove substring from a given string */
-char* removeSubStr(char* str, const char* sub_str) {
-    char *p, *q, *r;
-
-    if (*sub_str && (q = r = strstr(str, sub_str)) != NULL) {
-        size_t len = strlen(sub_str);
-        while ((r = strstr(p = r + len, sub_str)) != NULL) {
-            while (p < r) { 
-                *q++ = *p++; 
-            }
-        }
-        while ((*q++ = *p++) != '\0') { 
-            continue; 
-        }
-    }
-
-    return str;
-}
