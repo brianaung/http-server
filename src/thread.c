@@ -64,16 +64,16 @@ void* thread_connection(void* arg) {
 
     /* get the full path name (also handle path_escape) */
     full_path = addStrings(root_path, file_path);
+    /* base case: 404 not found error response */
     strcpy(http_status, "HTTP/1.0 404 Not Found\r\n\r\n");
     response = addStrings(http_status, "");
+    /* check for double dot segments */
     char* x;
     if ((x = strstr(full_path, "../")) == NULL ||
             (x = strstr(full_path, "..\0")) == NULL) {
-        /* construct http response (RFC 1945) */
+        /* construct http response on existing file (RFC 1945) */
         if ((fd = open(full_path, O_RDONLY)) > 0) {
-
             strcpy(http_status, "HTTP/1.0 200 OK\r\n");
-
             extension = strchr(file_path, '.'); 
             if (!extension) {
                 /* unknown file type */
@@ -90,8 +90,6 @@ void* thread_connection(void* arg) {
             response = addStrings(http_status, content_type);
         }
     }
-    // full_path = removeSubStr(full_path, "../");
-    // full_path = removeSubStr(full_path, "..\0");
 
     /* Write message back */
     n = send(newsockfd, response, strlen(response), 0);
