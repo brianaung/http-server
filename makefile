@@ -2,6 +2,7 @@ CC = gcc
 CFLAGS = -Wall -Wextra -pthread -g
 
 SRC = src/server.c \
+	  src/thread.c \
 	  src/utils.c \
 
 OBJ = $(SRC:.c=.o)
