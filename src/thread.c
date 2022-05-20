@@ -69,8 +69,8 @@ void* thread_connection(void* arg) {
     response = addStrings(http_status, "");
     /* check for double dot segments */
     char* x;
-    if ((x = strstr(full_path, "../")) == NULL ||
-            (x = strstr(full_path, "..\0")) == NULL) {
+    if ((x = strstr(full_path, "/../")) == NULL ||
+            (x = strstr(full_path, "/..\0")) == NULL) {
         /* construct http response on existing file (RFC 1945) */
         if ((fd = open(full_path, O_RDONLY)) > 0) {
             strcpy(http_status, "HTTP/1.0 200 OK\r\n");
